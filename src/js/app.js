@@ -55,49 +55,38 @@ App = {
     // pokemonRow.show();
 
   },
+  renderPokemons: function(pokId, pokemon, PokemonRow, PokemonTemplate, btn_category){
+        var monId = pokemon[0];
+        var monName = pokemon[1];
+        var monType = pokemon[2];
+        var monLevel = pokemon[3];
+        PokemonTemplate.find('.panel-title').text(monName);
+        PokemonTemplate.find('img').attr('src', "images/" + monId.c[0] + ".jpg");
+        PokemonTemplate.find('.pokemon-name').text(monName);
+        PokemonTemplate.find('.pokemon-type').text(monType);
+        PokemonTemplate.find('.pokemon-level').text(monLevel);
+        PokemonTemplate.find('.btn-'.concat(btn_category)).attr('data-id', monId.c[0]);
+        if (monId.c[0] == pokId) {
+          PokemonRow.append(PokemonTemplate.html());
+        }
+  },
   fetchWildPokemons: function (pokId) {
     App.contracts.Pokemon.deployed().then(function (instance) {
       pokemonInstance = instance;
       return pokemonInstance.wildPokemonCount();
     }).then(function (pokemonCount) {
-      // var pokemonResults = $("#pokemonResults");
-      // pokemonResults.empty();
       var wildPokemonRow = $('#wildPokemonRow');
       var wildPokemonTemplate = $('#wildPokemonTemplate');
       for (var i = 0; i < pokemonCount.c[0]; i++) {
         pokemonInstance.wildPokemons(i).then(function (index) {
           pokemonInstance.pokemons(index).then(function (pokemon) {
-
-
-            var monId = pokemon[0];
-            var monName = pokemon[1];
-            var monType = pokemon[2];
-            var monLevel = pokemon[3];
-
-            wildPokemonTemplate.find('.panel-title').text(monName);
-            wildPokemonTemplate.find('img').attr('src', "images/" + monId.c[0] + ".jpg");
-            wildPokemonTemplate.find('.pokemon-name').text(monName);
-            wildPokemonTemplate.find('.pokemon-type').text(monType);
-            wildPokemonTemplate.find('.pokemon-level').text(monLevel);
-            wildPokemonTemplate.find('.btn-catch').attr('data-id', monId.c[0]);
-            if (monId.c[0] == pokId) {
-              wildPokemonRow.append(wildPokemonTemplate.html());
-            }
+            App.renderPokemons(pokId, pokemon, wildPokemonRow, wildPokemonTemplate, 'catch');
           });
         });
       }
     }).catch(function (error) {
       console.warn(error);
     });
-  },
-  removeCaughtPokemons: function(pokId){
-          var wildPokemonRow = $('#wildPokemonRow');
-          wildPokemonRow.children("div").each(function(){
-              var id = $(this).find('.btn-catch').attr('data-id');
-              if(id == pokId){
-                  this.remove();
-              }
-          });
   },
   fetchOwnPokemons: function (pokId) {
     App.contracts.Pokemon.deployed().then(function (instance) {
@@ -110,21 +99,7 @@ App = {
       for (var i = 0; i < pokemonCount.c[0]; i++) {
         pokemonInstance.ownedPoks(App.account, i).then(function (index) {
           pokemonInstance.pokemons(index).then(function (pokemon) {
-            var monId = pokemon[0];
-            var monName = pokemon[1];
-            var monType = pokemon[2];
-            var monLevel = pokemon[3];
-
-              console.log("maa k c", monId.c[0]);
-            ownPokemonTemplate.find('.panel-title').text(monName);
-            ownPokemonTemplate.find('img').attr('src', "images/" + monId.c[0] + ".jpg");
-            ownPokemonTemplate.find('.pokemon-name').text(monName);
-            ownPokemonTemplate.find('.pokemon-type').text(monType);
-            ownPokemonTemplate.find('.pokemon-level').text(monLevel);
-            ownPokemonTemplate.find('.btn-trade').attr('data-id', monId.c[0]);
-            if (monId.c[0] == pokId) {
-              ownPokemonRow.append(ownPokemonTemplate.html());
-            }
+            App.renderPokemons(pokId, pokemon, ownPokemonRow, ownPokemonTemplate, 'trade');
           });
         });
       }
@@ -142,23 +117,7 @@ App = {
         for(var i = 0;i < pokemonCount.c[0]; i++){
             pokemonInstance.ownedPoks(App.account, i).then(function(index){
                 pokemonInstance.pokemons(index).then(function(pokemon){
-                    console.log(index);
-                    var monId = pokemon[0];
-                    var monName = pokemon[1];
-                    var monType = pokemon[2];
-                    var monLevel = pokemon[3];
-                    tradePokemonTemplate.find('.panel-title').text(monName);
-                    tradePokemonTemplate.find('img').attr('src', "images/" + monId + ".jpg");
-                    tradePokemonTemplate.find('.pokemon-name').text(monName);
-                    tradePokemonTemplate.find('.pokemon-type').text(monType);
-                    tradePokemonTemplate.find('.pokemon-level').text(monLevel);
-                    tradePokemonTemplate.find('.btn-buy').attr('data-id', monId);
-                    console.log("chakka", pokemonCount.c[0]);
-                    console.log("In trading function", monId.c[0], pokId);
-                    if(monId.c[0] == pokId){
-                        tradePokemonRow.append(tradePokemonTemplate.html());
-                        console.log("Chal jaa bhai", monId.c[0], pokId);
-                    }
+                    App.renderPokemons(pokId, pokemon, tradePokemonRow, tradePokemonTemplate, 'buy');
                 });
             });
         }
@@ -171,11 +130,8 @@ App = {
     var pokemonInstance;
     App.contracts.Pokemon.deployed().then(function (instance) {
       pokemonInstance = instance;
-      console.log("Data:id ", data_id, App.account);
       return pokemonInstance.catchPokemon(data_id, {from: App.account, value: 200});
     }).then(function (anything) {
-      console.log("lolololol");
-      console.log(anything);
     }).catch(function (error) {
       console.warn(error);
     });
@@ -197,6 +153,20 @@ App = {
       });
   },
 
+    /* Reload when the count of pokemon row in html is now equal to then pokemon's owned in contract */
+  ReloadOnCountNotCorrect(){
+    App.contracts.Pokemon.deployed().then(function (instance) {
+      pokemonInstance = instance;
+      return pokemonInstance.wildPokemonCount();
+    }).then(function (pokemonCount) {
+        var wildPokemonRowLength = $('#wildPokemonRow > div').length;
+        if(pokemonCount.c[0] < wildPokemonRowLength){
+            location.reload();
+        }
+    });
+
+  },
+
   listenForEvents: function () {
     App.contracts.Pokemon.deployed().then(function (instance) {
       instance.Transferred({}, {
@@ -204,9 +174,8 @@ App = {
         toBlock: 'latest'
       }).watch(function (error, event) {
         console.log("Pokemon Transferred", event)
-        App.removeCaughtPokemons(event.args["_pokId"]);
         App.fetchOwnPokemons(event.args["_pokId"].c[0]);
-        //location.reload();
+        App.ReloadOnCountNotCorrect();
       });
       instance.PokemonCreated({}, {
         fromBlock: 0,
